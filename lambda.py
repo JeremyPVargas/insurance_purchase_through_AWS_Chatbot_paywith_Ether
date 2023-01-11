@@ -2,6 +2,10 @@
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from botocore.vendored import requests
+import json
+import boto3
+
+
 
 ### Functionality Helper Functions ###
 def parse_int(n):
@@ -90,7 +94,7 @@ def close(session_attributes, fulfillment_state, message):
     return response
 
     ## Validate data
-def validate_data(age, Income, intent_request):
+def validate_data(age, intent_request):
     # Validate that the user is over 21 years old
     if age is not None:
         if age < 21 or age > 85:
@@ -101,24 +105,13 @@ def validate_data(age, Income, intent_request):
                 " or less than 65 years old to use this service, "
                 "please come back when you are 21 or enter a different age."
             )
-    # Validate the investment amount, it should be >= 5000
-    if Income is not None:
-        Income = parse_int(
-            Income
-        )  # Since parameters are strings it's important to cast values
-        if Income < 5000:
-            return build_validation_result(
-                False,
-                "Income",
-                "Congrats you qualify for our low income plan",
-            )
-            
+
           
     
     return build_validation_result(True, None, None)
 
     
-    
+# logic to parse through answers and decide what plan will be returned.  
 def get_price(age, smoke, alcohol, drug):
     
     bronze = 75
@@ -135,7 +128,7 @@ def get_price(age, smoke, alcohol, drug):
     age_5164 = 1.17
 
     
-    price = ""
+    
     if (age >= 18 and age < 31) and (smoke == "no") and (alcohol == "no") and (drug == "no"):
         bronze_price = bronze
         silver_price = silver
@@ -295,6 +288,9 @@ def get_price(age, smoke, alcohol, drug):
     else:
         raise Exception ("did not match any if statement")
     
+    
+    
+    
     return bronze_price,silver_price,gold_price,platinum_price
 
 
@@ -324,7 +320,7 @@ def recommend_insurance(intent_request):
    
     
     
-    # Gets the invocation source, for Lex dialogs "DialogCodeHook" is expected.
+    # Gets the invocation source, for Lex dialogs "DialogCodeHook" or "invocationSource" is expected.
     source = intent_request["invocationSource"]
     
     if source == "DialogCodeHook":
@@ -363,10 +359,16 @@ def recommend_insurance(intent_request):
         "Fulfilled",
         {
             "contentType": "PlainText",
-            "content": """Thank you for your information;
+            "content": """Thank you for your information here is the prices for your insurance options;
             {}
             """.format(
                 get_price(age, smoke, alcohol, drug)
+                
+  
+            
+            
+            
+            
             ),
         },
     )
@@ -387,12 +389,23 @@ def dispatch(intent_request):
 
     raise Exception("Intent with name " + intent_name + " not supported")
 
-
+s3 = boto3.client('s3')
+    
 ### Main Handler ###
 def lambda_handler(event, context):
+     
     """
     Route the incoming request based on intent.
     The JSON body of the request is provided in the event slot.
     """
+    
+    s3 = boto3.resource('s3')
+    s3object = s3.Object('insurance4life', 'sample.json')
+    my_dict = {"bronzeprice": 'bronze_price',"silverprice":"silver_price","goldprice": "gold_price", "platinumprice":"platinum_price"}
+    s3object.put(
+    Body=(bytes(json.dumps(my_dict).encode('UTF-8')))
+    )
+    
     print (event)
     return dispatch(event)
+    
