@@ -94,7 +94,7 @@ def close(session_attributes, fulfillment_state, message):
     return response
 
     ## Validate data
-def validate_data(age, intent_request):
+def validate_data(age,):
     # Validate that the user is over 21 years old
     if age is not None:
         if age < 21 or age > 85:
@@ -330,7 +330,7 @@ def recommend_insurance(intent_request):
         slots = get_slots(intent_request)
 
         # Validates user's input using the validate_data function
-        validation_result = validate_data(age, Income,  intent_request)
+        validation_result = validate_data(age)
 
         # If the data provided by the user is not valid,
         # the elicitSlot dialog action is used to re-prompt for the first violation detected.
@@ -352,17 +352,18 @@ def recommend_insurance(intent_request):
 
         # Once all slots are valid, a delegate dialog is returned to Lex to choose the next course of action.
         return delegate(output_session_attributes, get_slots(intent_request))
-
+   
+    bronze_price, silver_price,gold_price, platinum_price = get_price(age, smoke, alcohol, drug) 
+       
     # Return a message with conversion's result.
     return close(
         intent_request["sessionAttributes"],
         "Fulfilled",
         {
             "contentType": "PlainText",
-            "content": """Thank you for your information here is the prices for your insurance options;
+            "content": """Thank you for your information the prices for your plans will be listed on our website please click here;
             {}
-            """.format(
-                get_price(age, smoke, alcohol, drug)
+            """.format("http:www.insurance4life.com"
                 
   
             
@@ -371,8 +372,8 @@ def recommend_insurance(intent_request):
             
             ),
         },
-    )
-
+    ), get_price(age, smoke, alcohol, drug) 
+   
 
 
 ### Intents Dispatcher ###
@@ -385,11 +386,13 @@ def dispatch(intent_request):
 
     # Dispatch to bot's intent handlers
     if intent_name == "Insurance_questions":
-        return recommend_insurance(intent_request)
+        #return recommend_insurance(intent_request)
+        close, price = recommend_insurance(intent_request)
+        return close, price
 
     raise Exception("Intent with name " + intent_name + " not supported")
 
-s3 = boto3.client('s3')
+
     
 ### Main Handler ###
 def lambda_handler(event, context):
@@ -398,14 +401,17 @@ def lambda_handler(event, context):
     Route the incoming request based on intent.
     The JSON body of the request is provided in the event slot.
     """
+    close,prices = dispatch(event)
     
+    s3 = boto3.client('s3')
     s3 = boto3.resource('s3')
     s3object = s3.Object('insurance4life', 'sample.json')
-    my_dict = {"bronzeprice": 'bronze_price',"silverprice":"silver_price","goldprice": "gold_price", "platinumprice":"platinum_price"}
+    #my_dict = {"bronzeprice": bronze_price,"silverprice":silver_price,"goldprice": gold_price, "platinumprice":platinum_price}
+    my_dict = {"prices": prices}
     s3object.put(
     Body=(bytes(json.dumps(my_dict).encode('UTF-8')))
     )
     
     print (event)
-    return dispatch(event)
-    
+    #return dispatch(event)
+    return close
