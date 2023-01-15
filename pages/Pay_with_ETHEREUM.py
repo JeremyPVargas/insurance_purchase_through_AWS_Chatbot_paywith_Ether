@@ -154,9 +154,7 @@ elif plan_selected == 'GOLD':
     eth_price_of_plan_selected = eth_gold
 else:
     eth_price_of_plan_selected = eth_platinum
-    
-
-
+ 
 # ENTER ETHER WALLET NUMBER -----------------------------------------------------------------
 
 st.write("---")

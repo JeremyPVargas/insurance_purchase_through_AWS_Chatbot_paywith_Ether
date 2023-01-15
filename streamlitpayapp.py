@@ -30,8 +30,8 @@ load_dotenv()
 s3 = boto3.resource(
     service_name='s3',
     region_name='us-east-1',
-    aws_access_key_id='AKIAUQRXW2VDXBWR7MNO',
-    aws_secret_access_key='SOcEpl4fgfkpCmIuZJWL2H2SB9w4M4KuIaxMDdBc') 
+    aws_access_key_id='YOUR_ACCESS_KEY_ID',
+    aws_secret_access_key='YOUR_SECRET_ACCESS_KEY') 
 
 for bucket in s3.buckets.all():
     print(bucket.name)
